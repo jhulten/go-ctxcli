@@ -2,7 +2,6 @@ package ctxcli
 
 import (
 	"context"
-	"os"
 	"os/signal"
 	"syscall"
 	"testing"
@@ -19,7 +18,6 @@ func TestWithSignalTrap(t *testing.T) {
 
 	cli.sigChan <- syscall.SIGUSR1
 
-	waitSig(t, cli.sigChan, syscall.SIGUSR1)
 	waitDone(t, testCtx)
 
 	if testCtx.Err() != context.Canceled {
@@ -35,18 +33,6 @@ func TestExitIfCancelled(t *testing.T) {
 }
 
 func TestPanicIfCancelled(t *testing.T) {
-}
-
-// from stdlib os/signal/signal_test.go
-func waitSig(t *testing.T, c <-chan os.Signal, sig os.Signal) {
-	select {
-	case s := <-c:
-		if s != sig {
-			t.Fatalf("signal was %v, want %v", s, sig)
-		}
-	case <-time.After(1 * time.Second):
-		t.Fatalf("timeout waiting for %v", sig)
-	}
 }
 
 func waitDone(t *testing.T, ctx context.Context) {

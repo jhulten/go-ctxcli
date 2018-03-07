@@ -2,7 +2,6 @@ package ctxcli
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,17 +38,16 @@ func WithSignalTrap(parent context.Context, sigs ...os.Signal) context.Context {
 	cancelCtx, cancel := context.WithCancel(parent)
 	signal.Notify(cli.sigChan, sigs...)
 
-	go func(cCtx context.Context, cliCtx *CLIContext) {
+	go func(cCtx context.Context, cliCtx *CLIContext, cancel context.CancelFunc) {
 		for {
 			select {
 			case <-cCtx.Done():
 				return
-			case err := <-cliCtx.sigChan:
-				fmt.Printf("caught %v\n", err)
+			case <-cliCtx.sigChan:
 				cancel()
 			}
 		}
-	}(cancelCtx, cli)
+	}(cancelCtx, cli, cancel)
 
 	return NewContext(cancelCtx, cli)
 }
