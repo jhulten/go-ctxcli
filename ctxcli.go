@@ -2,28 +2,56 @@ package ctxcli
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func WithSignalTrap(parent context.Context, sigs ...os.Signal) context.Context {
-	ctx, cancel := context.WithCancel(parent)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, sigs...)
+type CLIContext struct {
+	sigChan chan os.Signal
+}
 
-	go func() {
+// From lambdacontext, an unexported type to be used as key for types in
+// this package. This prevents collisions with keys defined in other packages.
+type key struct{}
+
+// the key for CLIContext in Contexts.
+var contextKey = &key{}
+
+func NewContext(parent context.Context, clictx *CLIContext) context.Context {
+	return context.WithValue(parent, contextKey, clictx)
+}
+
+func FromContext(ctx context.Context) (*CLIContext, bool) {
+	clictx, ok := ctx.Value(contextKey).(*CLIContext)
+	return clictx, ok
+}
+
+func WithSignalTrap(parent context.Context, sigs ...os.Signal) context.Context {
+	cli, ok := FromContext(parent)
+	if !ok {
+		cli = &CLIContext{
+			sigChan: make(chan os.Signal, 2),
+		}
+	}
+
+	cancelCtx, cancel := context.WithCancel(parent)
+	signal.Notify(cli.sigChan, sigs...)
+
+	go func(cCtx context.Context, cliCtx *CLIContext) {
 		for {
 			select {
-			case <-ctx.Done():
+			case <-cCtx.Done():
 				return
-			case <-sigChan:
+			case err := <-cliCtx.sigChan:
+				fmt.Printf("caught %v\n", err)
 				cancel()
 			}
 		}
-	}()
+	}(cancelCtx, cli)
 
-	return ctx
+	return NewContext(cancelCtx, cli)
 }
 
 func WithInterrupt(parent context.Context) context.Context {
