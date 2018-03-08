@@ -41,10 +41,9 @@ func WithSignalTrap(parent context.Context, sigs ...os.Signal) context.Context {
 	go func(cCtx context.Context, cliCtx *CLIContext, cancel context.CancelFunc) {
 		for {
 			select {
-			case <-cCtx.Done():
-				return
 			case <-cliCtx.sigChan:
 				cancel()
+			case <-cCtx.Done():
 			}
 		}
 	}(cancelCtx, cli, cancel)
@@ -56,12 +55,13 @@ func WithInterrupt(parent context.Context) context.Context {
 	return WithSignalTrap(parent, syscall.SIGINT, syscall.SIGTERM)
 }
 
-func ExitIfCancelled(ctx context.Context) {
-	select {
-	case <-ctx.Done():
-		os.Exit(1)
-	default:
-	}
+func ExitIfCancelled(ctx context.Context, exitCode int) {
+	defer func() {
+		if r := recover(); r != nil {
+			os.Exit(exitCode)
+		}
+	}()
+	PanicIfCancelled(ctx)
 }
 
 func PanicIfCancelled(ctx context.Context) {
