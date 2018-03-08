@@ -1,4 +1,4 @@
-# ctxcli: Extend golang context to CLI [![GoDoc](https://godoc.org/github.com/jhulten/go-ctxcli?status.png)](https://godoc.org/github.com/jhulten/go-ctxcli)
+# ctxcli: Extend golang context to CLI [![GoDoc](https://godoc.org/github.com/jhulten/go-ctxcli?status.png)](https://godoc.org/github.com/jhulten/go-ctxcli) [![Build Status](https://travis-ci.org/jhulten/go-ctxcli.svg?branch=master)](https://travis-ci.org/jhulten/go-ctxcli)
 
 ctxcli is a Go library extending the standard context with handling for OS signals. 
 
